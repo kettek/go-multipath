@@ -57,6 +57,27 @@ func (m *Multipath) Open(name string) (*os.File, error) {
 	return nil, os.ErrNotExist
 }
 
+// ReadFile reads the file named by filename and returns the contents.
+func (m *Multipath) ReadFile(filename string) ([]byte, error) {
+	file, err := m.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	fileinfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := make([]byte, fileinfo.Size())
+
+	if _, err := file.Read(buffer); err != nil {
+		return nil, err
+	}
+	return buffer, nil
+}
+
 // Stat attempts to find and return the FileInfo for a given file path from the paths list.
 func (m *Multipath) Stat(name string) (os.FileInfo, error) {
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
