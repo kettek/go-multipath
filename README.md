@@ -7,9 +7,11 @@ var mpath multipath.Multipath
 mpath.AddPath("a", multipath.FirstPriority)
 mpath.AddPath("b", multipath.LastPriority)
 
-if file, err := mpath.Open("myFile"); err != nil {
-  // ...
+file, err := mpath.Open("myFile")
+if err != nil {
+  panic(err)
 }
 defer file.Close()
+
 // Do stuff with file
 ```
