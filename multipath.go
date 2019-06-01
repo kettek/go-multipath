@@ -4,6 +4,8 @@ import (
 	"container/list"
 	"os"
 	"path"
+	"path/filepath"
+	"sort"
 )
 
 const (
@@ -98,4 +100,40 @@ func (m *Multipath) Lstat(name string) (os.FileInfo, error) {
 		}
 	}
 	return nil, os.ErrNotExist
+}
+
+type walkFile struct {
+	filePath string
+	info     os.FileInfo
+	err      error
+}
+
+// Walk walks the multipath file tree rooted at root, calling walkFn for each file or directory in the tree, including root. See https://golang.org/pkg/path/filepath/#Walk for more information.
+func (m *Multipath) Walk(root string, walkFn filepath.WalkFunc) (err error) {
+	filePaths := make(map[string]walkFile, 0)
+	for e := m.PathList.Front(); e != nil; e = e.Next() {
+		fullpath := path.Join(e.Value.(string), root)
+		filepath.Walk(fullpath, func(filePath string, info os.FileInfo, err error) error {
+			var localPath = filePath[len(fullpath):]
+			if _, ok := filePaths[localPath]; !ok {
+				filePaths[localPath] = walkFile{
+					filePath: path.Clean(localPath),
+					info:     info,
+					err:      err,
+				}
+			}
+			return nil
+		})
+	}
+
+	var sortedFiles []string
+	for k := range filePaths {
+		sortedFiles = append(sortedFiles, k)
+	}
+	sort.Strings(sortedFiles)
+
+	for i := range sortedFiles {
+		walkFn(filePaths[sortedFiles[i]].filePath, filePaths[sortedFiles[i]].info, filePaths[sortedFiles[i]].err)
+	}
+	return nil
 }
