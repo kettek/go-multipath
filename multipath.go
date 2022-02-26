@@ -18,6 +18,7 @@ const (
 // Multipath provides a structure for opening files from an aggregated list of paths.
 type Multipath struct {
 	PathList list.List
+	Sandbox  bool
 }
 
 // AddPath adds a given path to the paths list with a target priority.
@@ -48,8 +49,26 @@ func (m *Multipath) RemovePath(loc string) bool {
 	return false
 }
 
+// CleanPath cleans a path to remove access to unsafe directories.
+func (m *Multipath) CleanPath(loc string) string {
+	if m.Sandbox {
+		return loc
+	}
+	if loc == "" {
+		return loc
+	}
+	loc = filepath.Clean(loc)
+
+	if !filepath.IsAbs(loc) {
+		loc = filepath.Clean(string(os.PathSeparator) + loc)
+		loc, _ = filepath.Rel(string(os.PathSeparator), loc)
+	}
+	return filepath.Clean(loc)
+}
+
 // Open attempts to find and open the given file path from the paths list.
 func (m *Multipath) Open(name string) (*os.File, error) {
+	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
 		filepath := path.Join(e.Value.(string), name)
 		if file, err := os.Open(filepath); err == nil {
@@ -61,6 +80,7 @@ func (m *Multipath) Open(name string) (*os.File, error) {
 
 // ReadFile reads the file named by filename and returns the contents.
 func (m *Multipath) ReadFile(filename string) ([]byte, error) {
+	filename = m.CleanPath(filename)
 	file, err := m.Open(filename)
 	if err != nil {
 		return nil, err
@@ -82,6 +102,7 @@ func (m *Multipath) ReadFile(filename string) ([]byte, error) {
 
 // Stat attempts to find and return the FileInfo for a given file path from the paths list.
 func (m *Multipath) Stat(name string) (os.FileInfo, error) {
+	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
 		filepath := path.Join(e.Value.(string), name)
 		if fileinfo, err := os.Stat(filepath); err == nil {
@@ -93,6 +114,7 @@ func (m *Multipath) Stat(name string) (os.FileInfo, error) {
 
 // Lstat attempts to find and return the FileInfo for a given file path from the paths list.
 func (m *Multipath) Lstat(name string) (os.FileInfo, error) {
+	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
 		filepath := path.Join(e.Value.(string), name)
 		if fileinfo, err := os.Lstat(filepath); err == nil {
@@ -110,7 +132,8 @@ type walkFile struct {
 
 // Walk walks the multipath file tree rooted at root, calling walkFn for each file or directory in the tree, including root. See https://golang.org/pkg/path/filepath/#Walk for more information.
 func (m *Multipath) Walk(root string, walkFn filepath.WalkFunc) (err error) {
-	filePaths := make(map[string]walkFile, 0)
+	root = m.CleanPath(root)
+	filePaths := make(map[string]walkFile)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
 		fullpath := path.Join(e.Value.(string), root)
 		filepath.Walk(fullpath, func(filePath string, info os.FileInfo, err error) error {
