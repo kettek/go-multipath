@@ -1,4 +1,6 @@
 # go-multipath
+[![Go Reference](https://pkg.go.dev/badge/github.com/kettek/go-multipath.svg)](https://pkg.go.dev/github.com/kettek/go-multipath)
+
 A simple library for accessing files from multiple paths.
 
 ```
