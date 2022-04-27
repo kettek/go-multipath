@@ -3,7 +3,6 @@ package multipath
 import (
 	"container/list"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 )
@@ -70,8 +69,8 @@ func (m *Multipath) CleanPath(loc string) string {
 func (m *Multipath) Open(name string) (*os.File, error) {
 	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
-		filepath := path.Join(e.Value.(string), name)
-		if file, err := os.Open(filepath); err == nil {
+		fp := filepath.Join(e.Value.(string), name)
+		if file, err := os.Open(fp); err == nil {
 			return file, err
 		}
 	}
@@ -104,8 +103,8 @@ func (m *Multipath) ReadFile(filename string) ([]byte, error) {
 func (m *Multipath) Stat(name string) (os.FileInfo, error) {
 	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
-		filepath := path.Join(e.Value.(string), name)
-		if fileinfo, err := os.Stat(filepath); err == nil {
+		fp := filepath.Join(e.Value.(string), name)
+		if fileinfo, err := os.Stat(fp); err == nil {
 			return fileinfo, err
 		}
 	}
@@ -116,8 +115,8 @@ func (m *Multipath) Stat(name string) (os.FileInfo, error) {
 func (m *Multipath) Lstat(name string) (os.FileInfo, error) {
 	name = m.CleanPath(name)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
-		filepath := path.Join(e.Value.(string), name)
-		if fileinfo, err := os.Lstat(filepath); err == nil {
+		fp := filepath.Join(e.Value.(string), name)
+		if fileinfo, err := os.Lstat(fp); err == nil {
 			return fileinfo, err
 		}
 	}
@@ -135,12 +134,12 @@ func (m *Multipath) Walk(root string, walkFn filepath.WalkFunc) (err error) {
 	root = m.CleanPath(root)
 	filePaths := make(map[string]walkFile)
 	for e := m.PathList.Front(); e != nil; e = e.Next() {
-		fullpath := path.Join(e.Value.(string), root)
+		fullpath := filepath.Join(e.Value.(string), root)
 		filepath.Walk(fullpath, func(filePath string, info os.FileInfo, err error) error {
 			var localPath = filePath[len(fullpath):]
 			if _, ok := filePaths[localPath]; !ok {
 				filePaths[localPath] = walkFile{
-					filePath: path.Clean(localPath),
+					filePath: filepath.Clean(localPath),
 					info:     info,
 					err:      err,
 				}
