@@ -59,7 +59,7 @@ func (m *Multipath) CleanPath(loc string) string {
 	loc = filepath.Clean(loc)
 
 	if !filepath.IsAbs(loc) {
-		loc = filepath.Clean(string(os.PathSeparator) + loc)
+		loc = filepath.Join(string(os.PathSeparator), loc)
 		loc, _ = filepath.Rel(string(os.PathSeparator), loc)
 	}
 	return filepath.Clean(loc)
