@@ -15,13 +15,13 @@ var embedFS embed.FS
 func main() {
 	var mfs multipath.FS
 
-	mfs.AddFS(os.DirFS("dir_a"), multipath.FirstPriority)
-	mfs.AddFS(os.DirFS("dir_b"), multipath.LastPriority)
+	mfs.InsertFS(os.DirFS("dir_a"), multipath.FirstPriority)
+	mfs.InsertFS(os.DirFS("dir_b"), multipath.LastPriority)
 	sub, err := fs.Sub(embedFS, "embed_dir")
 	if err != nil {
 		panic(err)
 	}
-	mfs.AddFS(sub, multipath.LastPriority)
+	mfs.InsertFS(sub, multipath.LastPriority)
 
 	mfs.Walk(".", func(path string, d fs.DirEntry, err error) error {
 		fmt.Printf("%s %+v\n", path, d.Name())

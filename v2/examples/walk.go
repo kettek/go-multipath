@@ -11,11 +11,11 @@ import (
 func main() {
 	var mfs multipath.FS
 
-	mfs.AddFS(os.DirFS("dir_a"), multipath.FirstPriority)
+	mfs.InsertFS(os.DirFS("dir_a"), multipath.FirstPriority)
 	fmt.Println("Added dir_a")
-	mfs.AddFS(os.DirFS("dir_b"), multipath.LastPriority)
+	mfs.InsertFS(os.DirFS("dir_b"), multipath.LastPriority)
 	fmt.Println("Added dir_b")
-	mfs.AddFS(os.DirFS("dir_c"), multipath.FirstPriority)
+	mfs.InsertFS(os.DirFS("dir_c"), multipath.FirstPriority)
 	fmt.Println("Added dir_c")
 
 	mfs.Walk(".", func(path string, d fs.DirEntry, err error) error {

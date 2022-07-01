@@ -18,11 +18,16 @@ const (
 	LastPriority  = -1
 )
 
-// AddFS adds the given FS to the filesystems list with a given priority.
+// AddFS adds the given fs to the beginning of the filesystems list.
+func (m *FS) AddFS(p fs.FS) {
+	m.InsertFS(p, FirstPriority)
+}
+
+// InsertFS adds the given FS to the filesystems list with a given priority.
 // If priority is FirstPriority, it is added to the beginning of the filesystems list.
-// If it is LastPriority, it ias added at the end of the filesystems list.
+// If it is LastPriority, it is added at the end of the filesystems list.
 // Other priority values will be treated as indices to insert at.
-func (m *FS) AddFS(p fs.FS, priority int) {
+func (m *FS) InsertFS(p fs.FS, priority int) {
 	if priority == FirstPriority {
 		m.filesystems = append([]fs.FS{p}, m.filesystems...)
 	} else if priority == LastPriority {

@@ -11,8 +11,8 @@ import (
 func main() {
 	var mfs multipath.FS
 
-	mfs.AddFS(os.DirFS("dir_a"), multipath.FirstPriority)
-	mfs.AddFS(os.DirFS("dir_b"), multipath.LastPriority)
+	mfs.InsertFS(os.DirFS("dir_a"), multipath.FirstPriority)
+	mfs.InsertFS(os.DirFS("dir_b"), multipath.LastPriority)
 
 	file, err := mfs.Open("A")
 	if err != nil {
@@ -27,7 +27,7 @@ func main() {
 
 	fmt.Printf("file 'A' contents with dir_a and dir_b:\n%s", b)
 
-	mfs.AddFS(os.DirFS("dir_c"), multipath.FirstPriority)
+	mfs.InsertFS(os.DirFS("dir_c"), multipath.FirstPriority)
 
 	file, err = mfs.Open("A")
 	if err != nil {
