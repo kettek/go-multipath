@@ -3,13 +3,13 @@ package multipath
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 )
 
 // FS is a container for multiple fs.FS conforming items.
 type FS struct {
 	filesystems []fs.FS
-	Sandbox     bool
 }
 
 // These are our priorities.
@@ -54,6 +54,7 @@ func (m *FS) RemoveFS(p fs.FS) bool {
 
 // Open opens the named file.
 func (m *FS) Open(name string) (fs.File, error) {
+	name = m.Clean(name)
 	for _, e := range m.filesystems {
 		if e, ok := e.(fs.FS); ok {
 			if d, err := e.Open(name); err == nil {
@@ -66,6 +67,7 @@ func (m *FS) Open(name string) (fs.File, error) {
 
 // ReadDir reads the named directory and returns a list of directory entries sorted by filename.
 func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
+	name = m.Clean(name)
 	for _, e := range m.filesystems {
 		if e, ok := e.(fs.ReadDirFS); ok {
 			if d, err := e.ReadDir(name); err == nil {
@@ -78,6 +80,7 @@ func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 
 // ReadFile reads the named file and returns its contents.
 func (m *FS) ReadFile(name string) ([]byte, error) {
+	name = m.Clean(name)
 	for _, e := range m.filesystems {
 		if e, ok := e.(fs.ReadFileFS); ok {
 			if f, err := e.ReadFile(name); err == nil {
@@ -90,6 +93,7 @@ func (m *FS) ReadFile(name string) ([]byte, error) {
 
 // Stat returns a FileInfo describing the named file from the file system.
 func (m *FS) Stat(name string) (fs.FileInfo, error) {
+	name = m.Clean(name)
 	for _, e := range m.filesystems {
 		if e, ok := e.(fs.StatFS); ok {
 			if s, err := e.Stat(name); err == nil {
@@ -102,6 +106,7 @@ func (m *FS) Stat(name string) (fs.FileInfo, error) {
 
 // Glob returns the names of all files matching pattern, providing an implementation of the top-level Glob function.
 func (m *FS) Glob(pattern string) ([]string, error) {
+	pattern = m.Clean(pattern) // Hmm... this might not work right.
 	for _, e := range m.filesystems {
 		if e, ok := e.(fs.GlobFS); ok {
 			if s, err := e.Glob(pattern); err == nil {
@@ -120,6 +125,7 @@ type walkFile struct {
 
 // Walk traverses the directory structure, calling wallkFn on each.
 func (m *FS) Walk(path string, walkFn fs.WalkDirFunc) (err error) {
+	path = m.Clean(path)
 	filePaths := make(map[string]walkFile)
 	for _, e := range m.filesystems {
 		fs.WalkDir(e, path, func(path string, d fs.DirEntry, err error) error {
@@ -144,4 +150,21 @@ func (m *FS) Walk(path string, walkFn fs.WalkDirFunc) (err error) {
 		walkFn(filePaths[sortedFiles[i]].filePath, filePaths[sortedFiles[i]].d, filePaths[sortedFiles[i]].err)
 	}
 	return nil
+}
+
+// Clean cleans a path to remove access to unsafe directories.
+func (m *FS) Clean(loc string) string {
+	if loc == "" {
+		return loc
+	}
+	loc = filepath.Clean(loc)
+
+	if !filepath.IsAbs(loc) {
+		loc = filepath.Join(string(os.PathSeparator), loc)
+		loc, _ = filepath.Rel(string(os.PathSeparator), loc)
+	} else {
+		// Strip leading slash.
+		loc = loc[1:]
+	}
+	return filepath.Clean(loc)
 }
