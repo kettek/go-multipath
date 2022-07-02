@@ -67,10 +67,8 @@ func (m *FS) Open(name string) (fs.File, error) {
 func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	name = m.Clean(name)
 	for _, e := range m.filesystems {
-		if e, ok := e.(fs.ReadDirFS); ok {
-			if d, err := e.ReadDir(name); err == nil {
-				return d, nil
-			}
+		if d, err := fs.ReadDir(e, name); err == nil {
+			return d, err
 		}
 	}
 	return nil, os.ErrNotExist
@@ -80,10 +78,8 @@ func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 func (m *FS) ReadFile(name string) ([]byte, error) {
 	name = m.Clean(name)
 	for _, e := range m.filesystems {
-		if e, ok := e.(fs.ReadFileFS); ok {
-			if f, err := e.ReadFile(name); err == nil {
-				return f, nil
-			}
+		if bytes, err := fs.ReadFile(e, name); err == nil {
+			return bytes, err
 		}
 	}
 	return nil, os.ErrNotExist
@@ -93,10 +89,8 @@ func (m *FS) ReadFile(name string) ([]byte, error) {
 func (m *FS) Stat(name string) (fs.FileInfo, error) {
 	name = m.Clean(name)
 	for _, e := range m.filesystems {
-		if e, ok := e.(fs.StatFS); ok {
-			if s, err := e.Stat(name); err == nil {
-				return s, nil
-			}
+		if info, err := fs.Stat(e, name); err == nil {
+			return info, err
 		}
 	}
 	return nil, os.ErrNotExist
@@ -106,10 +100,8 @@ func (m *FS) Stat(name string) (fs.FileInfo, error) {
 func (m *FS) Glob(pattern string) ([]string, error) {
 	pattern = m.Clean(pattern) // Hmm... this might not work right.
 	for _, e := range m.filesystems {
-		if e, ok := e.(fs.GlobFS); ok {
-			if s, err := e.Glob(pattern); err == nil {
-				return s, nil
-			}
+		if matches, err := fs.Glob(e, pattern); err == nil {
+			return matches, err
 		}
 	}
 	return nil, os.ErrNotExist
