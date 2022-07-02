@@ -56,10 +56,8 @@ func (m *FS) RemoveFS(p fs.FS) bool {
 func (m *FS) Open(name string) (fs.File, error) {
 	name = m.Clean(name)
 	for _, e := range m.filesystems {
-		if e, ok := e.(fs.FS); ok {
-			if d, err := e.Open(name); err == nil {
-				return d, nil
-			}
+		if d, err := e.Open(name); err == nil {
+			return d, nil
 		}
 	}
 	return nil, os.ErrNotExist
