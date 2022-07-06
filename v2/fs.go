@@ -1,8 +1,10 @@
 package multipath
 
 import (
+	"embed"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 )
@@ -54,8 +56,13 @@ func (m *FS) RemoveFS(p fs.FS) bool {
 
 // Open opens the named file.
 func (m *FS) Open(name string) (fs.File, error) {
-	name = m.Clean(name)
 	for _, e := range m.filesystems {
+		name := name
+		if _, ok := e.(embed.FS); ok {
+			name = m.cleanEmbed(name)
+		} else {
+			name = m.Clean(name)
+		}
 		if d, err := e.Open(name); err == nil {
 			return d, nil
 		}
@@ -65,8 +72,13 @@ func (m *FS) Open(name string) (fs.File, error) {
 
 // ReadDir reads the named directory and returns a list of directory entries sorted by filename.
 func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
-	name = m.Clean(name)
 	for _, e := range m.filesystems {
+		name := name
+		if _, ok := e.(embed.FS); ok {
+			name = m.cleanEmbed(name)
+		} else {
+			name = m.Clean(name)
+		}
 		if d, err := fs.ReadDir(e, name); err == nil {
 			return d, err
 		}
@@ -76,8 +88,13 @@ func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 
 // ReadFile reads the named file and returns its contents.
 func (m *FS) ReadFile(name string) ([]byte, error) {
-	name = m.Clean(name)
 	for _, e := range m.filesystems {
+		name := name
+		if _, ok := e.(embed.FS); ok {
+			name = m.cleanEmbed(name)
+		} else {
+			name = m.Clean(name)
+		}
 		if bytes, err := fs.ReadFile(e, name); err == nil {
 			return bytes, err
 		}
@@ -87,8 +104,13 @@ func (m *FS) ReadFile(name string) ([]byte, error) {
 
 // Stat returns a FileInfo describing the named file from the file system.
 func (m *FS) Stat(name string) (fs.FileInfo, error) {
-	name = m.Clean(name)
 	for _, e := range m.filesystems {
+		name := name
+		if _, ok := e.(embed.FS); ok {
+			name = m.cleanEmbed(name)
+		} else {
+			name = m.Clean(name)
+		}
 		if info, err := fs.Stat(e, name); err == nil {
 			return info, err
 		}
@@ -98,12 +120,33 @@ func (m *FS) Stat(name string) (fs.FileInfo, error) {
 
 // Glob returns the names of all files matching pattern, providing an implementation of the top-level Glob function.
 func (m *FS) Glob(pattern string) ([]string, error) {
-	pattern = m.Clean(pattern) // Hmm... this might not work right.
+	vals := make([]string, 0)
 	for _, e := range m.filesystems {
+		pattern := pattern
+		if _, ok := e.(embed.FS); ok {
+			pattern = m.cleanEmbed(pattern)
+		} else {
+			pattern = m.Clean(pattern)
+		}
 		if matches, err := fs.Glob(e, pattern); err == nil {
-			return matches, err
+			for _, m := range matches {
+				matches := false
+				for _, v := range vals {
+					if v == m {
+						matches = true
+					}
+				}
+				if !matches {
+					vals = append(vals, m)
+				}
+			}
 		}
 	}
+
+	if len(vals) > 0 {
+		return vals, nil
+	}
+
 	return nil, os.ErrNotExist
 }
 
@@ -115,9 +158,14 @@ type walkFile struct {
 
 // Walk traverses the directory structure, calling wallkFn on each.
 func (m *FS) Walk(path string, walkFn fs.WalkDirFunc) (err error) {
-	path = m.Clean(path)
 	filePaths := make(map[string]walkFile)
 	for _, e := range m.filesystems {
+		path := path
+		if _, ok := e.(embed.FS); ok {
+			path = m.cleanEmbed(path)
+		} else {
+			path = m.Clean(path)
+		}
 		fs.WalkDir(e, path, func(path string, d fs.DirEntry, err error) error {
 			if _, ok := filePaths[path]; !ok {
 				filePaths[path] = walkFile{
@@ -147,6 +195,7 @@ func (m *FS) Clean(loc string) string {
 	if loc == "" {
 		return loc
 	}
+
 	loc = filepath.Clean(loc)
 
 	if !filepath.IsAbs(loc) {
@@ -157,4 +206,19 @@ func (m *FS) Clean(loc string) string {
 		loc = loc[1:]
 	}
 	return filepath.Clean(loc)
+}
+
+// cleanEmbed is a version of embed used only for embedded files.
+func (m *FS) cleanEmbed(loc string) string {
+	if loc == "" {
+		return loc
+	}
+
+	loc = path.Clean("/" + loc)
+
+	if path.IsAbs(loc) {
+		// Strip leading slash.
+		loc = loc[1:]
+	}
+	return path.Clean(loc)
 }
