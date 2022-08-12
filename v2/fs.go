@@ -196,7 +196,7 @@ func (m *FS) Clean(loc string) string {
 		return loc
 	}
 
-	loc = filepath.Clean(loc)
+	loc = filepath.Clean(filepath.FromSlash(loc))
 
 	if !filepath.IsAbs(loc) {
 		loc = filepath.Join(string(os.PathSeparator), loc)
@@ -205,7 +205,7 @@ func (m *FS) Clean(loc string) string {
 		// Strip leading slash.
 		loc = loc[1:]
 	}
-	return filepath.Clean(loc)
+	return filepath.ToSlash(filepath.Clean(loc))
 }
 
 // cleanEmbed is a version of embed used only for embedded files.
