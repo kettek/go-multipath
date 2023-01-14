@@ -28,18 +28,15 @@ func (m *FS) AddFS(p fs.FS) {
 // InsertFS adds the given FS to the filesystems list with a given priority.
 // If priority is FirstPriority, it is added to the beginning of the filesystems list.
 // If it is LastPriority, it is added at the end of the filesystems list.
-// Other priority values will be treated as indices to insert at.
+// Other priority values will be treated as indices to insert at. If the priority is
+// beyond the length of filesystems, it will be added to the end of the filesystems list.
 func (m *FS) InsertFS(p fs.FS, priority int) {
 	if priority == FirstPriority {
 		m.filesystems = append([]fs.FS{p}, m.filesystems...)
-	} else if priority == LastPriority {
+	} else if priority == LastPriority || priority >= len(m.filesystems) {
 		m.filesystems = append(m.filesystems, p)
 	} else {
-		for i := 0; i < len(m.filesystems); i++ {
-			if i == priority {
-				m.filesystems = append(m.filesystems[:i], append([]fs.FS{p}, m.filesystems[i:]...)...)
-			}
-		}
+		m.filesystems = append(m.filesystems[:priority], append([]fs.FS{p}, m.filesystems[priority:]...)...)
 	}
 }
 
