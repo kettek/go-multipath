@@ -54,12 +54,7 @@ func (m *FS) RemoveFS(p fs.FS) bool {
 // Open opens the named file.
 func (m *FS) Open(name string) (fs.File, error) {
 	for _, e := range m.filesystems {
-		name := name
-		if _, ok := e.(embed.FS); ok {
-			name = m.cleanEmbed(name)
-		} else {
-			name = m.Clean(name)
-		}
+		name = m.cleanPath(e, name)
 		if d, err := e.Open(name); err == nil {
 			return d, nil
 		}
@@ -70,12 +65,7 @@ func (m *FS) Open(name string) (fs.File, error) {
 // ReadDir reads the named directory and returns a list of directory entries sorted by filename.
 func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	for _, e := range m.filesystems {
-		name := name
-		if _, ok := e.(embed.FS); ok {
-			name = m.cleanEmbed(name)
-		} else {
-			name = m.Clean(name)
-		}
+		name = m.cleanPath(e, name)
 		if d, err := fs.ReadDir(e, name); err == nil {
 			return d, err
 		}
@@ -86,12 +76,7 @@ func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 // ReadFile reads the named file and returns its contents.
 func (m *FS) ReadFile(name string) ([]byte, error) {
 	for _, e := range m.filesystems {
-		name := name
-		if _, ok := e.(embed.FS); ok {
-			name = m.cleanEmbed(name)
-		} else {
-			name = m.Clean(name)
-		}
+		name = m.cleanPath(e, name)
 		if bytes, err := fs.ReadFile(e, name); err == nil {
 			return bytes, err
 		}
@@ -102,12 +87,7 @@ func (m *FS) ReadFile(name string) ([]byte, error) {
 // Stat returns a FileInfo describing the named file from the file system.
 func (m *FS) Stat(name string) (fs.FileInfo, error) {
 	for _, e := range m.filesystems {
-		name := name
-		if _, ok := e.(embed.FS); ok {
-			name = m.cleanEmbed(name)
-		} else {
-			name = m.Clean(name)
-		}
+		name = m.cleanPath(e, name)
 		if info, err := fs.Stat(e, name); err == nil {
 			return info, err
 		}
@@ -119,12 +99,7 @@ func (m *FS) Stat(name string) (fs.FileInfo, error) {
 func (m *FS) Glob(pattern string) ([]string, error) {
 	vals := make([]string, 0)
 	for _, e := range m.filesystems {
-		pattern := pattern
-		if _, ok := e.(embed.FS); ok {
-			pattern = m.cleanEmbed(pattern)
-		} else {
-			pattern = m.Clean(pattern)
-		}
+		pattern = m.cleanPath(e, pattern)
 		if matches, err := fs.Glob(e, pattern); err == nil {
 			for _, m := range matches {
 				matches := false
@@ -157,12 +132,7 @@ type walkFile struct {
 func (m *FS) Walk(path string, walkFn fs.WalkDirFunc) (err error) {
 	filePaths := make(map[string]walkFile)
 	for _, e := range m.filesystems {
-		path := path
-		if _, ok := e.(embed.FS); ok {
-			path = m.cleanEmbed(path)
-		} else {
-			path = m.Clean(path)
-		}
+		path = m.cleanPath(e, path)
 		fs.WalkDir(e, path, func(path string, d fs.DirEntry, err error) error {
 			if _, ok := filePaths[path]; !ok {
 				filePaths[path] = walkFile{
@@ -185,6 +155,14 @@ func (m *FS) Walk(path string, walkFn fs.WalkDirFunc) (err error) {
 		walkFn(filePaths[sortedFiles[i]].filePath, filePaths[sortedFiles[i]].d, filePaths[sortedFiles[i]].err)
 	}
 	return nil
+}
+
+// cleanPath returns the cleaned path for the given fs.
+func (m *FS) cleanPath(e fs.FS, path string) string {
+	if _, ok := e.(embed.FS); ok {
+		return m.cleanEmbed(path)
+	}
+	return m.Clean(path)
 }
 
 // Clean cleans a path to remove access to unsafe directories.
