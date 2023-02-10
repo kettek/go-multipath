@@ -52,7 +52,7 @@ func (m *FS) RemoveFS(p fs.FS) bool {
 }
 
 // Open opens the named file.
-func (m *FS) Open(name string) (fs.File, error) {
+func (m FS) Open(name string) (fs.File, error) {
 	for _, e := range m.filesystems {
 		name = m.cleanPath(e, name)
 		if d, err := e.Open(name); err == nil {
@@ -63,7 +63,7 @@ func (m *FS) Open(name string) (fs.File, error) {
 }
 
 // ReadDir reads the named directory and returns a list of directory entries sorted by filename.
-func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
+func (m FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	for _, e := range m.filesystems {
 		name = m.cleanPath(e, name)
 		if d, err := fs.ReadDir(e, name); err == nil {
@@ -74,7 +74,7 @@ func (m *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 // ReadFile reads the named file and returns its contents.
-func (m *FS) ReadFile(name string) ([]byte, error) {
+func (m FS) ReadFile(name string) ([]byte, error) {
 	for _, e := range m.filesystems {
 		name = m.cleanPath(e, name)
 		if bytes, err := fs.ReadFile(e, name); err == nil {
@@ -85,7 +85,7 @@ func (m *FS) ReadFile(name string) ([]byte, error) {
 }
 
 // Stat returns a FileInfo describing the named file from the file system.
-func (m *FS) Stat(name string) (fs.FileInfo, error) {
+func (m FS) Stat(name string) (fs.FileInfo, error) {
 	for _, e := range m.filesystems {
 		name = m.cleanPath(e, name)
 		if info, err := fs.Stat(e, name); err == nil {
@@ -96,7 +96,7 @@ func (m *FS) Stat(name string) (fs.FileInfo, error) {
 }
 
 // Glob returns the names of all files matching pattern, providing an implementation of the top-level Glob function.
-func (m *FS) Glob(pattern string) ([]string, error) {
+func (m FS) Glob(pattern string) ([]string, error) {
 	vals := make([]string, 0)
 	for _, e := range m.filesystems {
 		pattern = m.cleanPath(e, pattern)
